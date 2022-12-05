@@ -12,7 +12,6 @@ public class SignInActivity extends AppCompatActivity {
 
     private ActivitySignInBinding binding;
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
