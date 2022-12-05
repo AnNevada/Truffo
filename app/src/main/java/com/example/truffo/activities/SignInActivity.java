@@ -1,12 +1,11 @@
 package com.example.truffo.activities;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Toast;
 
-import com.example.truffo.R;
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.truffo.databinding.ActivitySignInBinding;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -28,24 +27,22 @@ public class SignInActivity extends AppCompatActivity {
     {
         binding.textCreateNewButton.setOnClickListener(v ->
                 startActivity(new Intent(getApplicationContext(),SignUpActivity.class)));
-        binding.buttonSignIn.setOnClickListener(view -> addDataToFirestore());
+        binding.buttonSignUp.setOnClickListener(v -> addDataToFireStore());
     }
 
-    private void addDataToFirestore()
-    {
+    //Test add data to firestore
+    private void addDataToFireStore(){
         FirebaseFirestore database = FirebaseFirestore.getInstance();
-        HashMap<String,Object> data = new HashMap<>();
-        data.put("first_name","Tran");
-        data.put("last_name","Kien");
+        HashMap<String, Object> data = new HashMap<>();
+        data.put("first_name", "OhMy");
+        data.put("last_name", "God");
         database.collection("users")
                 .add(data)
                 .addOnSuccessListener(documentReference -> {
-                    Toast.makeText(getApplicationContext(),"Data inserted",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), "Data Inserted", Toast.LENGTH_SHORT).show();
                 })
-                .addOnFailureListener(exception -> {
-                    Toast.makeText(getApplicationContext(),exception.getMessage(),Toast.LENGTH_SHORT).show();
+                .addOnFailureListener(exception ->{
+                    Toast.makeText(getApplicationContext(), exception.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
-
-
 }

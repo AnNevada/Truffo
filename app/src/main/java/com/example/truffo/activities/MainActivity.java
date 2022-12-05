@@ -1,9 +1,11 @@
-package com.example.truffo;
+package com.example.truffo.activities;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.util.Log;
+
+import com.example.truffo.R;
 
 public class MainActivity extends AppCompatActivity {
 
