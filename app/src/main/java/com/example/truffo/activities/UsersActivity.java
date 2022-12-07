@@ -37,11 +37,12 @@ public class UsersActivity extends AppCompatActivity {
         binding.imageBack.setOnClickListener(v -> onBackPressed());
     }
 
+    //THIS FUNCTION RETRIEVE USER INFORMATION IN FIRESTORE DATABASE
     private void getUsers()
     {
         loading(true);
         FirebaseFirestore database = FirebaseFirestore.getInstance();
-        //get users from firebase and add to a list for adapter
+        //GET USERS FROM FIREBASE AND ADD TO A LIST FOR ADAPTER
         database.collection(Constants.KEY_COLLECTION_USERS)
                 .get()
                 .addOnCompleteListener(task -> {
@@ -78,14 +79,14 @@ public class UsersActivity extends AppCompatActivity {
                 });
     }
 
-    // Show error message if not user
+    //THIS FUNCTION WILL SHOW ERROR MESSAGE IF USER IS NOT AVAILABLE
     private void showErrorMessage()
     {
         binding.textErrorMessage.setText(String.format("%s","No user available"));
         binding.textErrorMessage.setVisibility(View.VISIBLE);
     }
 
-    // To show progress bar when load users
+    //THIS FUNCTION USE TO SHOW PROGRESS BAR WHEN LOAD USERS
     private void loading(Boolean isLoading)
     {
         if (isLoading)

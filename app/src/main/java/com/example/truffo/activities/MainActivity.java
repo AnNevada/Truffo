@@ -24,6 +24,7 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private PrefsManager prefsManager;
 
+    //SETTING UP EVERYTHING BEFORE LAUNCH
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -35,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
         setListeners();
     }
 
+    //CONVENIENT FUNCTION SET ALL ON_CLICK LISTENER AND REUSE IT LATER
     private void setListeners()
     {
         binding.imageSignOut.setOnClickListener(v -> signOut());
@@ -43,26 +45,28 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // load user's icon and name after sign in
+    //THIS FUNCTION LOAD USER'S ICON AND NAME AFTER SIGNED IN
     private void loadUserDetails()
     {
         binding.textName.setText(prefsManager.getString(Constants.KEY_NAME));
-        byte[] bytes = Base64.decode(prefsManager.getString(Constants.KEY_IMAGE),Base64.DEFAULT);
+        byte[] bytes = Base64.decode(prefsManager.getString(Constants.KEY_IMAGE), Base64.DEFAULT);
         Bitmap bitmap = BitmapFactory.decodeByteArray(bytes,0,bytes.length);
         binding.imageProfile.setImageBitmap(bitmap);
     }
 
+    //THIS FUNCTION TAKE IN A MESSAGE THEN USE IT TO SHOW A TOAST
     private void showToast(String message)
     {
         Toast.makeText(getApplicationContext(),message,Toast.LENGTH_SHORT).show();
     }
 
+    //THIS FUNCTION WILL GET TOKEN FROM FIREBASE MESSAGING SERVICE
     private void getToken()
     {
         FirebaseMessaging.getInstance().getToken().addOnSuccessListener(this::updateToken);
     }
 
-    //Update user's token to firebase
+    //THIS FUNCTION USE TO UPDATE USER'S TOKEN TO FIREBASE
     private void updateToken(String token)
     {
         FirebaseFirestore database = FirebaseFirestore.getInstance();
@@ -74,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> showToast("Unable to update token"));
     }
 
+    //THIS FUNCTION USE TO SIGN OUT
     private void signOut()
     {
         showToast("Signing out...");

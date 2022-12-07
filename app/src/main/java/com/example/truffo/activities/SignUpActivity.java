@@ -44,7 +44,6 @@ public class SignUpActivity extends AppCompatActivity {
 
         //Create prefs manager
         preferenceManager = new PrefsManager(getApplicationContext());
-
         setListeners();
     }
 
@@ -56,7 +55,7 @@ public class SignUpActivity extends AppCompatActivity {
                 signUp();
             }
         });
-        //Open media storage when click
+        //OPEN MEDIA STORAGE WHEN CLICK & STORE IMAGE
         binding.layoutImage.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -68,6 +67,7 @@ public class SignUpActivity extends AppCompatActivity {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
+    //THIS FUNCTION USE TO SIGN UP
     private void signUp(){
         loading(true);
         FirebaseFirestore database = FirebaseFirestore.getInstance();
@@ -94,7 +94,7 @@ public class SignUpActivity extends AppCompatActivity {
                 });
     }
 
-    //This func use to encode image
+    //THIS FUNCTION USE TO ENCODE IMAGE
     private String encodeImage(Bitmap bitmap){
         int previewWidth = 150;
         int previewHeight = bitmap.getHeight() * previewWidth/bitmap.getWidth();
@@ -102,10 +102,10 @@ public class SignUpActivity extends AppCompatActivity {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         previewBitmap.compress(Bitmap.CompressFormat.JPEG, 50, byteArrayOutputStream);
         byte[] bytes = byteArrayOutputStream.toByteArray();
-        return Base64.getEncoder().encodeToString(bytes); //New way to write in API 26 <3
+        return Base64.getEncoder().encodeToString(bytes); //NEW WAY TO WRITE IN API 26 <3
     }
 
-    //Pick an image
+    //PICK AN IMAGE
     private final ActivityResultLauncher<Intent> pickImage = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
@@ -127,6 +127,8 @@ public class SignUpActivity extends AppCompatActivity {
             }
     );
 
+
+    //This function check if the sign up details is valid
     private Boolean isValidSignUpDetails(){
         if(encodedImage == null){
             showToast("Select profile image");
@@ -148,12 +150,11 @@ public class SignUpActivity extends AppCompatActivity {
         }else if(!binding.inputPassword.getText().toString().equals(binding.inputConfirmPassword.getText().toString())){
             showToast("Password and confirm password must be the same");
             return false;
-        }else{
-            return true;
         }
-        return null; //?
+        return true;
     }
 
+    //THIS FUNCTION DISPLAY PROGRESS BAR WHEN USER CLICK SIGN UP BUTTON
     private void loading(Boolean isLoading){
         if(isLoading){
             binding.buttonSignUp.setVisibility(View.INVISIBLE);
