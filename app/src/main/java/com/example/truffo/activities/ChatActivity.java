@@ -5,11 +5,16 @@ import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.util.Base64;
 import android.view.View;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 
 import com.example.truffo.adapters.ChatAdapter;
 import com.example.truffo.databinding.ActivityChatBinding;
 import com.example.truffo.models.ChatMessage;
 import com.example.truffo.models.User;
+import com.example.truffo.network.ApiClient;
+import com.example.truffo.network.ApiService;
 import com.example.truffo.utils.Constants;
 import com.example.truffo.utils.PrefsManager;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -20,6 +25,9 @@ import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,6 +36,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ChatActivity extends BaseActivity {
 
@@ -89,7 +101,69 @@ public class ChatActivity extends BaseActivity {
             addConversation(conversation);
         }
 
+        // SENDER SENDS NOTIFICATION IF RECEIVER IS NOT ONLINE
+        if(!isReceiverAvailable) {
+            try {
+                JSONArray tokens = new JSONArray();
+                tokens.put(receiverUser.token);
+
+                JSONObject data = new JSONObject();
+                data.put(Constants.KEY_USER_ID, preferenceManager.getString(Constants.KEY_USER_ID));
+                data.put(Constants.KEY_NAME, preferenceManager.getString(Constants.KEY_NAME));
+                data.put(Constants.KEY_FCM_TOKEN, preferenceManager.getString(Constants.KEY_FCM_TOKEN));
+                data.put(Constants.KEY_MESSAGE, binding.inputMessage.getText().toString());
+
+                JSONObject body = new JSONObject();
+                body.put(Constants.REMOTE_MSG_DATA, data);
+                body.put(Constants.REMOTE_MSG_REGISTRATION_IDS, tokens);
+
+                sendNotification(body.toString());
+            }
+            catch(Exception exception) {
+                Toast.makeText(this, exception.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        }
         binding.inputMessage.setText(null);
+    }
+
+    private void showToast(String message) {
+        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+    }
+
+    private void sendNotification(String messageBody) {
+        ApiClient.getClient().create(ApiService.class).sendMessage(
+                Constants.getRemoteMsgHeaders(),
+                messageBody
+        ).enqueue(new Callback<String>() {
+            @Override
+            public void onResponse(@NonNull Call<String> call, Response<String> response) {
+                if(response.isSuccessful()) {
+                    try {
+                        if(response.body() != null) {
+                            JSONObject responseJson = new JSONObject(response.body());
+                            JSONArray results = responseJson.getJSONArray("results");
+                            if(responseJson.getInt("failure") == 1) {
+                                JSONObject error = (JSONObject) results.get(0);
+                                showToast(error.getString("error"));
+                                return;
+                            }
+                        }
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    showToast("Notification sent successfully");
+                }
+                else {
+                    showToast("Error: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<String> call, Throwable t) {
+                showToast(t.getMessage());
+            }
+        });
     }
 
     // LISTEN TO AVAILABILITY OF THE RECEIVER
@@ -102,6 +176,12 @@ public class ChatActivity extends BaseActivity {
                         if(value.getLong(Constants.KEY_AVAILABILITY) != null) {
                             int availability = Objects.requireNonNull(value.getLong(Constants.KEY_AVAILABILITY)).intValue();
                             isReceiverAvailable = availability == 1;
+                        }
+                        receiverUser.token = value.getString(Constants.KEY_FCM_TOKEN);
+                        if(receiverUser.image == null) {
+                            receiverUser.image = value.getString(Constants.KEY_IMAGE);
+                            chatAdapter.setReceiverProfileImage(getBitmapFromEncodedString(receiverUser.image));
+                            chatAdapter.notifyItemRangeChanged(0, chatMessages.size());
                         }
                     }
 
@@ -172,8 +252,11 @@ public class ChatActivity extends BaseActivity {
 
     // CONVERT BASE64 STRING TO IMAGE
     private Bitmap getBitmapFromEncodedString(String encodedImage) {
-        byte[] bytes = Base64.decode(encodedImage, Base64.DEFAULT);
-        return BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+        if(encodedImage != null) {
+            byte[] bytes = Base64.decode(encodedImage, Base64.DEFAULT);
+            return BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+        }
+        return null;
     }
 
     private void setListeners() {

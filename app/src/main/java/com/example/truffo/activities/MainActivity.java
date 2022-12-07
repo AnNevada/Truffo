@@ -150,6 +150,7 @@ public class MainActivity extends BaseActivity implements ConversationListener {
     //THIS FUNCTION USE TO UPDATE USER'S TOKEN TO FIREBASE
     private void updateToken(String token)
     {
+        prefsManager.putString(Constants.KEY_FCM_TOKEN, token);
         FirebaseFirestore database = FirebaseFirestore.getInstance();
         DocumentReference documentReference =
                 database.collection(Constants.KEY_COLLECTION_USERS).document(
