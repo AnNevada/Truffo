@@ -10,6 +10,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.truffo.databinding.ActivitySignInBinding;
+import com.example.truffo.databinding.ActivitySignUpBinding;
 import com.example.truffo.utils.Constants;
 import com.example.truffo.utils.PrefsManager;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -78,7 +79,7 @@ public class SignInActivity extends AppCompatActivity {
 
     }
 
-    // loading animation when sign in button is clicked
+    //THIS FUNCTION WILL LOAD ANIMATION WHEN SIGN IN BUTTON IS CLICKED
     private void loading(Boolean isLoading)
     {
         if(isLoading)
@@ -93,28 +94,12 @@ public class SignInActivity extends AppCompatActivity {
         }
     }
 
-    //Test add data to firestore
-//    private void addDataToFireStore(){
-//        FirebaseFirestore database = FirebaseFirestore.getInstance();
-//        HashMap<String, Object> data = new HashMap<>();
-//        data.put("first_name", "Giga");
-//        data.put("last_name", "Chad 2");
-//        database.collection("users")
-//                .add(data)
-//                .addOnSuccessListener(documentReference -> {
-//                    Toast.makeText(getApplicationContext(), "Data Inserted", Toast.LENGTH_SHORT).show();
-//                })
-//                .addOnFailureListener(exception ->{
-//                    Toast.makeText(getApplicationContext(), exception.getMessage(), Toast.LENGTH_SHORT).show();
-//                });
-//    }
-
     private void showToast(String message)
     {
         Toast.makeText(getApplicationContext(),message,Toast.LENGTH_SHORT).show();
     }
 
-    // Check user's entered details and show toast message of that error
+    // CHECK USER'S ENTERED DETAILS AND SHOW TOAST MESSAGE OF THAT ERROR
     private Boolean isValidSignInDetails()
     {
         if(binding.inputEmail.getText().toString().trim().isEmpty())
