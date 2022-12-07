@@ -14,7 +14,10 @@ import com.example.truffo.models.ChatMessage;
 import com.example.truffo.models.User;
 import com.example.truffo.utils.Constants;
 import com.example.truffo.utils.PrefsManager;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.firebase.firestore.DocumentChange;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -35,6 +38,7 @@ public class ChatActivity extends AppCompatActivity {
     private ChatAdapter chatAdapter;
     private PrefsManager preferenceManager;
     private FirebaseFirestore database;
+    private String conversationId = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +71,24 @@ public class ChatActivity extends AppCompatActivity {
         message.put(Constants.KEY_MESSAGE, binding.inputMessage.getText().toString());
         message.put(Constants.KEY_TIMESTAMP, new Date());
         database.collection(Constants.KEY_COLLECTION_CHAT).add(message);
+
+        // UPDATE CONVERSATION IF ALREADY EXISTS, ELSE CREATE NEW CONVERSATION
+        if(conversationId != null) {
+            updateConversation(binding.inputMessage.getText().toString());
+        }
+        else {
+            HashMap<String, Object> conversation = new HashMap<>();
+            conversation.put(Constants.KEY_SENDER_ID, preferenceManager.getString(Constants.KEY_USER_ID));
+            conversation.put(Constants.KEY_SENDER_NAME, preferenceManager.getString(Constants.KEY_NAME));
+            conversation.put(Constants.KEY_SENDER_IMAGE, preferenceManager.getString(Constants.KEY_IMAGE));
+            conversation.put(Constants.KEY_RECEIVER_ID, receiverUser.id);
+            conversation.put(Constants.KEY_RECEIVER_NAME, receiverUser.name);
+            conversation.put(Constants.KEY_RECEIVER_IMAGE, receiverUser.image);
+            conversation.put(Constants.KEY_LAST_MESSAGE, binding.inputMessage.getText().toString());
+            conversation.put(Constants.KEY_TIMESTAMP, new Date());
+            addConversation(conversation);
+        }
+
         binding.inputMessage.setText(null);
     }
 
@@ -82,7 +104,7 @@ public class ChatActivity extends AppCompatActivity {
                 .addSnapshotListener(eventListener);
     }
 
-    // EVENT LISTENER FOR MESSAGES IN FIRESTORE DATABASE
+    // EVENT LISTENER AFTER LOAD MESSAGES IN FIRESTORE DATABASE
     private final EventListener<QuerySnapshot> eventListener = (value, error) -> {
         if(error != null) return;
 
@@ -111,6 +133,11 @@ public class ChatActivity extends AppCompatActivity {
             binding.chatRecyclerView.setVisibility(View.VISIBLE);
         }
         binding.progressBar.setVisibility(View.GONE);
+
+        // LOAD CONVERSATIONS AFTER MESSAGES ARE LOADED
+        if(conversationId == null) {
+            checkForConversation();
+        }
     };
 
     //THIS FUNCTION USES TO RECEIVE USER DATA WHEN WE CLICK THE USER ICON AT THE USERSACTIVITY
@@ -135,4 +162,42 @@ public class ChatActivity extends AppCompatActivity {
     private String getReadableDateTime(Date date) {
         return new SimpleDateFormat("dd/MM/yyyy - hh:mm a", Locale.getDefault()).format(date);
     }
+
+    private void addConversation(HashMap<String, Object> conversation) {
+        database.collection(Constants.KEY_COLLECTION_CONVERSATIONS)
+                .add(conversation)
+                .addOnSuccessListener(documentReference -> {
+                    conversationId = documentReference.getId();
+                });
+    }
+
+    private void updateConversation(String message) {
+        DocumentReference documentReference = database.collection(Constants.KEY_COLLECTION_CONVERSATIONS).document(conversationId);
+        documentReference.update(Constants.KEY_LAST_MESSAGE, message, Constants.KEY_TIMESTAMP, new Date());
+    }
+
+    // LOAD CONVERSATIONS IN WHICH USER PARTICIPATE FROM FIRESTORE DATABASE
+    private void checkForConversation() {
+        if(chatMessages.size() != 0) {
+            checkForConversationRemotely(preferenceManager.getString(Constants.KEY_USER_ID), receiverUser.id);
+            checkForConversationRemotely(receiverUser.id, preferenceManager.getString(Constants.KEY_USER_ID));
+        }
+    }
+
+    // LOAD CONVERSATIONS FROM DATABASE WHICH MATCHES THE USER ID AND RECEIVER ID
+    private void checkForConversationRemotely(String senderId, String receiverId) {
+        database.collection(Constants.KEY_COLLECTION_CONVERSATIONS)
+                .whereEqualTo(Constants.KEY_SENDER_ID, senderId)
+                .whereEqualTo(Constants.KEY_RECEIVER_ID, receiverId)
+                .get()
+                .addOnCompleteListener(conversationOnCompleteListener);
+    }
+
+    // EVENT LISTENER AFTER LOAD CONVERSATIONS IN WHICH USER PARTICIPATE FROM FIRESTORE DATABASE
+    private final OnCompleteListener<QuerySnapshot> conversationOnCompleteListener = task -> {
+        if(task.isSuccessful() && task.getResult() != null && task.getResult().getDocuments().size() > 0) {
+            DocumentSnapshot documentSnapshot = task.getResult().getDocuments().get(0);
+            conversationId = documentSnapshot.getId();
+        }
+    };
 }
