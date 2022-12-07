@@ -11,4 +11,9 @@ public class Constants {
     public static final String KEY_IMAGE = "image";
     public static final String KEY_FCM_TOKEN = "fcmToken";
     public static final String KEY_USER = "user";
+
+    //For google map service
+    public static final int LOCATION_SERVICE_ID = 175;
+    public static final String ACTION_START_LOCATION_SERVICE = "startLocationService";
+    public static final String ACTION_STOP_LOCATION_SERVICE = "stopLocationService";
 }
