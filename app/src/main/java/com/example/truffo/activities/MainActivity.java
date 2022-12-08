@@ -64,6 +64,9 @@ public class MainActivity extends BaseActivity implements ConversationListener {
         binding.fabNewChat.setOnClickListener(v->{
             startActivity(new Intent(getApplicationContext(), UsersActivity.class));
         });
+        binding.fabBotChat.setOnClickListener(v -> {
+            startActivity(new Intent(getApplicationContext(),ChatBotActivity.class));
+        });
     }
 
     //THIS FUNCTION LOAD USER'S ICON AND NAME AFTER SIGNED IN
