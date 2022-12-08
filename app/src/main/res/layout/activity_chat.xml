@@ -140,6 +140,20 @@
 
     </FrameLayout>
 
+    <TextView
+        android:id="@+id/textTyping"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/_10ssp"
+        android:text="User is typing ..."
+        app:layout_constraintBottom_toBottomOf="@id/viewBackground"
+        app:layout_constraintStart_toStartOf="@id/chatRecyclerView"
+        android:gravity="center"
+        android:paddingBottom="@dimen/_12sdp"
+        android:visibility="gone"
+        />
+
+
     <EditText
         android:id="@+id/inputMessage"
         android:layout_width="0dp"
