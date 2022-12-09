@@ -1,13 +1,20 @@
 package com.example.truffo.activities;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Base64;
 import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.example.truffo.adapters.ChatAdapter;
 import com.example.truffo.databinding.ActivityChatBinding;
@@ -72,7 +79,98 @@ public class ChatActivity extends BaseActivity {
                 preferenceManager.getString(Constants.KEY_USER_ID)
         );
         binding.chatRecyclerView.setAdapter(chatAdapter);
+
+        binding.textTyping.setText(receiverUser.name + " is typing...");
+
+        binding.inputMessage.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (s.toString().trim().length() > 0) {
+                    updateTypingStatus(1);
+                } else {
+                    updateTypingStatus(0);
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+
+        // UPDATE TYPING STATUS WHEN RECEIVE BROADCAST
+        LocalBroadcastManager.getInstance(this)
+                .registerReceiver(
+                        new BroadcastReceiver() {
+                            @Override
+                            public void onReceive(Context context, Intent intent) {
+                                int typingStatus = intent.getIntExtra(Constants.KEY_IS_TYPING, -1);
+                                if(typingStatus == 0) {
+                                    binding.textTyping.setVisibility(View.GONE);
+                                } else {
+                                    binding.textTyping.setVisibility(View.VISIBLE);
+                                }
+                            }
+                        }
+                        , new IntentFilter(Constants.ACTION_TYPING)
+                );
+
         database = FirebaseFirestore.getInstance();
+    }
+
+    // UPDATE TYPING STATUS OF SENDER
+    private void updateTypingStatus(int status) {
+        try {
+            JSONArray tokens = new JSONArray();
+            tokens.put(receiverUser.token);
+
+            JSONObject typingStatus = new JSONObject();
+            typingStatus.put(Constants.MESSAGE_TYPE, Constants.MESSAGE_TYPE_TYPING_STATUS);
+            typingStatus.put(Constants.KEY_IS_TYPING, status);
+            typingStatus.put(Constants.KEY_SENDER_ID, preferenceManager.getString(Constants.KEY_USER_ID));
+            typingStatus.put(Constants.KEY_RECEIVER_ID, receiverUser.id);
+            typingStatus.put(Constants.KEY_FCM_TOKEN, preferenceManager.getString(Constants.KEY_FCM_TOKEN));
+
+            JSONObject body = new JSONObject();
+            body.put(Constants.REMOTE_MSG_DATA, typingStatus);
+            body.put(Constants.REMOTE_MSG_REGISTRATION_IDS, tokens);
+
+            String messageBody = body.toString();
+
+            ApiClient.getClient().create(ApiService.class).sendMessage(
+                    Constants.getRemoteMsgHeaders(),
+                    messageBody
+            ).enqueue(new Callback<String>() {
+                @Override
+                public void onResponse(Call<String> call, Response<String> response) {
+                    if (response.isSuccessful()) {
+                        try {
+                            JSONObject responseObj = new JSONObject(Objects.requireNonNull(response.body()));
+                            if (responseObj.getInt("failure") == 0) {
+                                Toast.makeText(ChatActivity.this, "Message sent successfully", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(ChatActivity.this, responseObj.toString(), Toast.LENGTH_SHORT).show();
+                            }
+                        } catch (Exception exception) {
+                            Toast.makeText(ChatActivity.this, exception.getMessage(),Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(ChatActivity.this, response.message(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<String> call, Throwable t) {
+                    Toast.makeText(ChatActivity.this, "Message failed", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+        catch(Exception exception) {
+            Toast.makeText(ChatActivity.this, "Message failed", Toast.LENGTH_SHORT).show();
+        }
     }
 
     // SEND MESSAGE TO FIRESTORE DATABASE
@@ -108,6 +206,7 @@ public class ChatActivity extends BaseActivity {
                 tokens.put(receiverUser.token);
 
                 JSONObject data = new JSONObject();
+                data.put(Constants.MESSAGE_TYPE, Constants.MESSAGE_TYPE_SEND_NOTIFICATION);
                 data.put(Constants.KEY_USER_ID, preferenceManager.getString(Constants.KEY_USER_ID));
                 data.put(Constants.KEY_NAME, preferenceManager.getString(Constants.KEY_NAME));
                 data.put(Constants.KEY_FCM_TOKEN, preferenceManager.getString(Constants.KEY_FCM_TOKEN));
@@ -305,6 +404,12 @@ public class ChatActivity extends BaseActivity {
             conversationId = documentSnapshot.getId();
         }
     };
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        updateTypingStatus(0);
+    }
 
     @Override
     protected void onResume() {
