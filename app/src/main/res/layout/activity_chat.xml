@@ -37,9 +37,10 @@
         android:layout_marginTop="@dimen/_12sdp"
         android:padding="@dimen/_5sdp"
         android:src="@drawable/ic_back"
-        android:tint="@color/white"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        android:tint="@color/white"
+        />
 
 
     <androidx.appcompat.widget.AppCompatImageView
@@ -51,9 +52,10 @@
         android:layout_marginRight="@dimen/_16sdp"
         android:padding="@dimen/_4sdp"
         android:src="@drawable/ic_info"
-        android:tint="@color/white"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        android:tint="@color/white"
+        />
 
 
     <TextView
@@ -71,17 +73,19 @@
         app:layout_constraintBottom_toBottomOf="@id/imageBack"
         app:layout_constraintEnd_toStartOf="@id/imageInfo"
         app:layout_constraintStart_toEndOf="@id/imageBack"
-        app:layout_constraintTop_toTopOf="@id/imageBack" />
+        app:layout_constraintTop_toTopOf="@id/imageBack"
+        />
 
     <View
         android:id="@+id/viewSupporter"
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginTop="@dimen/_12sdp"
         android:background="@color/primary"
+        android:layout_marginTop="@dimen/_12sdp"
         app:layout_constraintTop_toBottomOf="@id/imageBack"
 
         />
+
 
 
     <androidx.recyclerview.widget.RecyclerView
@@ -92,11 +96,12 @@
         android:orientation="vertical"
         android:overScrollMode="never"
         android:padding="@dimen/_20sdp"
+        app:stackFromEnd="true"
         android:visibility="gone"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         app:layout_constraintBottom_toBottomOf="@id/viewBackground"
         app:layout_constraintTop_toBottomOf="@id/textAvailability"
-        app:stackFromEnd="true" />
+        />
 
     <ProgressBar
         android:id="@+id/progressBar"
@@ -108,6 +113,7 @@
         app:layout_constraintTop_toTopOf="@id/viewBackground"
 
         />
+
 
 
     <FrameLayout
@@ -154,6 +160,19 @@
 
     </FrameLayout>
 
+    <TextView
+        android:id="@+id/textTyping"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/_10ssp"
+        android:text="User is typing ..."
+        app:layout_constraintBottom_toBottomOf="@id/viewBackground"
+        app:layout_constraintStart_toStartOf="@id/chatRecyclerView"
+        android:gravity="center"
+        android:paddingBottom="@dimen/_12sdp"
+        android:visibility="gone"
+        />
+
 
     <EditText
         android:id="@+id/inputMessage"
@@ -168,8 +187,6 @@
         android:paddingStart="@dimen/_16sdp"
         android:paddingEnd="@dimen/_16sdp"
         android:textColor="@color/white"
-
-
         android:textColorHint="@color/secondary_text"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/layoutLocation"
@@ -183,7 +200,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/green"
-        android:gravity="center"
         android:padding="@dimen/_2sdp"
         android:text="@string/online"
         android:textColor="@color/white"
