@@ -6,89 +6,68 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.truffo.R;
 import com.example.truffo.databinding.ItemContainerReceivedMessageBinding;
 import com.example.truffo.databinding.ItemContainerSentMessageBinding;
 import com.example.truffo.models.ChatBot;
 import com.example.truffo.models.ChatMessage;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ChatBotAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private List<ChatBot> chatMessages;
-    private final String senderId;
-    public static final int VIEW_TYPE_SENT = 1;
-    public static final int VIEW_TYPE_RECEIVED = 2;
-    public ChatBotAdapter(List<ChatBot> chatMessages,String senderID) {
+    public ChatBotAdapter(List<ChatBot> chatMessages) {
         this.chatMessages = chatMessages;
-        this.senderId = senderID;
     }
 
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-//        switch (viewType)
-//        {
-//            case 0:
-//                return new SentMessageViewHolder(
-//                        ItemContainerSentMessageBinding.inflate(
-//                                LayoutInflater.from(parent.getContext()),
-//                                parent,
-//                                false
-//                        )
-//                );
-//            case 1:
-//                return new ReceivedMessageViewHolder(
-//                        ItemContainerReceivedMessageBinding.inflate(
-//                                LayoutInflater.from(parent.getContext()),
-//                                parent,
-//                                false
-//                        )
-//                );
-//        }
-//        return null;
-        if(viewType == VIEW_TYPE_SENT)
+        switch (viewType)
         {
-            return new SentMessageViewHolder(
-                    ItemContainerSentMessageBinding.inflate(
-                            LayoutInflater.from(parent.getContext()),
-                            parent,
-                            false
-                    )
-            );
+            case 0:
+                return new SentMessageViewHolder(
+                        ItemContainerSentMessageBinding.inflate(
+                                LayoutInflater.from(parent.getContext()),
+                                parent,
+                                false
+                        )
+                );
+            case 1:
+                return new ReceivedMessageViewHolder(
+                        ItemContainerReceivedMessageBinding.inflate(
+                                LayoutInflater.from(parent.getContext()),
+                                parent,
+                                false
+                        )
+                );
         }
-        else
-        {
-            return new ReceivedMessageViewHolder(
-                    ItemContainerReceivedMessageBinding.inflate(
-                            LayoutInflater.from(parent.getContext()),
-                            parent,
-                            false
-                    )
-            );
-        }
+        return null;
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         ChatBot chatMessage = chatMessages.get(position);
-        if(getItemViewType(position) == VIEW_TYPE_SENT)
-        {
-            ((SentMessageViewHolder) holder).binding.textMessage.setText(chatMessage.getMessage());
-        }
-        else {
-            ((ReceivedMessageViewHolder) holder).binding.textMessage.setText(chatMessage.getMessage());
+        switch (chatMessage.getSender()){
+            case "user":
+                ((SentMessageViewHolder) holder).binding.textMessage.setText(chatMessage.getMessage());
+                break;
+            case "bot":
+                ((ReceivedMessageViewHolder) holder).binding.textMessage.setText(chatMessage.getMessage());
+                break;
         }
     }
 
     @Override
     public int getItemViewType(int position) {
-        if(chatMessages.get(position).getSender().equals(senderId))
-        {
-            return VIEW_TYPE_SENT;
-        }
-        else
-        {
-            return VIEW_TYPE_RECEIVED;
+        switch (chatMessages.get(position).getSender()){
+            case "user":
+                return  0;
+            case "bot":
+                return 1;
+            default:
+                return -1;
         }
     }
 
@@ -113,7 +92,7 @@ public class ChatBotAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         ReceivedMessageViewHolder(ItemContainerReceivedMessageBinding itemContainerReceivedMessageBinding) {
             super(itemContainerReceivedMessageBinding.getRoot());
             binding = itemContainerReceivedMessageBinding;
-
+            binding.imageProfile.setImageResource(R.drawable.robot);
         }
 
     }
