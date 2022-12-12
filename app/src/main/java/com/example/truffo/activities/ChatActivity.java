@@ -1,13 +1,23 @@
 package com.example.truffo.activities;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.app.Dialog;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Base64;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.example.truffo.adapters.ChatAdapter;
 import com.example.truffo.databinding.ActivityChatBinding;
@@ -17,6 +27,8 @@ import com.example.truffo.network.ApiClient;
 import com.example.truffo.network.ApiService;
 import com.example.truffo.utils.Constants;
 import com.example.truffo.utils.PrefsManager;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentReference;
@@ -52,6 +64,10 @@ public class ChatActivity extends BaseActivity {
     private String conversationId = null;
     private Boolean isReceiverAvailable = false;
 
+    //Vars for google map
+    private static final String TAG = "MapTest";
+    public static final int ERROR_DIALOG_REQUEST = 9001;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,17 +88,108 @@ public class ChatActivity extends BaseActivity {
                 preferenceManager.getString(Constants.KEY_USER_ID)
         );
         binding.chatRecyclerView.setAdapter(chatAdapter);
+
+        binding.textTyping.setText(receiverUser.name + " is typing...");
+
+        binding.inputMessage.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (s.toString().trim().length() > 0) {
+                    updateTypingStatus(1);
+                } else {
+                    updateTypingStatus(0);
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+
+        // UPDATE TYPING STATUS WHEN RECEIVE BROADCAST
+        LocalBroadcastManager.getInstance(this)
+                .registerReceiver(
+                        new BroadcastReceiver() {
+                            @Override
+                            public void onReceive(Context context, Intent intent) {
+                                int typingStatus = intent.getIntExtra(Constants.KEY_IS_TYPING, -1);
+                                if(typingStatus == 0) {
+                                    binding.textTyping.setVisibility(View.GONE);
+                                } else {
+                                    binding.textTyping.setVisibility(View.VISIBLE);
+                                }
+                            }
+                        }
+                        , new IntentFilter(Constants.ACTION_TYPING)
+                );
+
         database = FirebaseFirestore.getInstance();
+    }
+
+    // UPDATE TYPING STATUS OF SENDER
+    private void updateTypingStatus(int status) {
+        try {
+            JSONArray tokens = new JSONArray();
+            tokens.put(receiverUser.token);
+
+            JSONObject typingStatus = new JSONObject();
+            typingStatus.put(Constants.MESSAGE_TYPE, Constants.MESSAGE_TYPE_TYPING_STATUS);
+            typingStatus.put(Constants.KEY_IS_TYPING, status);
+            typingStatus.put(Constants.KEY_SENDER_ID, preferenceManager.getString(Constants.KEY_USER_ID));
+            typingStatus.put(Constants.KEY_RECEIVER_ID, receiverUser.id);
+            typingStatus.put(Constants.KEY_FCM_TOKEN, preferenceManager.getString(Constants.KEY_FCM_TOKEN));
+
+            JSONObject body = new JSONObject();
+            body.put(Constants.REMOTE_MSG_DATA, typingStatus);
+            body.put(Constants.REMOTE_MSG_REGISTRATION_IDS, tokens);
+
+            String messageBody = body.toString();
+
+            ApiClient.getClient().create(ApiService.class).sendMessage(
+                    Constants.getRemoteMsgHeaders(),
+                    messageBody
+            ).enqueue(new Callback<String>() {
+                @Override
+                public void onResponse(Call<String> call, Response<String> response) {
+                    if (response.isSuccessful()) {
+                        try {
+                            JSONObject responseObj = new JSONObject(Objects.requireNonNull(response.body()));
+                            if (responseObj.getInt("failure") == 0) {
+                                Toast.makeText(ChatActivity.this, "Message sent successfully", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(ChatActivity.this, responseObj.toString(), Toast.LENGTH_SHORT).show();
+                            }
+                        } catch (Exception exception) {
+                            Toast.makeText(ChatActivity.this, exception.getMessage(),Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(ChatActivity.this, response.message(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<String> call, Throwable t) {
+                    Toast.makeText(ChatActivity.this, "Message failed", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+        catch(Exception exception) {
+            Toast.makeText(ChatActivity.this, "Message failed", Toast.LENGTH_SHORT).show();
+        }
     }
 
     // SEND MESSAGE TO FIRESTORE DATABASE
     private void sendMessage() {
         HashMap<String, Object> message = new HashMap<>();
-        message.put(Constants.KEY_SENDER_ID, preferenceManager.getString(Constants.KEY_USER_ID));
-        message.put(Constants.KEY_RECEIVER_ID, receiverUser.id);
-        message.put(Constants.KEY_MESSAGE, binding.inputMessage.getText().toString());
-        message.put(Constants.KEY_TIMESTAMP, new Date());
-        database.collection(Constants.KEY_COLLECTION_CHAT).add(message);
+        message.put(Constants.KEY_SENDER_ID, preferenceManager.getString(Constants.KEY_USER_ID)); //PUT SENDER ID
+        message.put(Constants.KEY_RECEIVER_ID, receiverUser.id); //PUT RECEIVER ID
+        message.put(Constants.KEY_MESSAGE, binding.inputMessage.getText().toString()); //PUT MESSAGE
+        message.put(Constants.KEY_TIMESTAMP, new Date()); //PUT DATE
+        database.collection(Constants.KEY_COLLECTION_CHAT).add(message); //COLLECT MESSAGE OBJECT
 
         // UPDATE CONVERSATION IF ALREADY EXISTS, ELSE CREATE NEW CONVERSATION
         if(conversationId != null) {
@@ -108,6 +215,7 @@ public class ChatActivity extends BaseActivity {
                 tokens.put(receiverUser.token);
 
                 JSONObject data = new JSONObject();
+                data.put(Constants.MESSAGE_TYPE, Constants.MESSAGE_TYPE_SEND_NOTIFICATION);
                 data.put(Constants.KEY_USER_ID, preferenceManager.getString(Constants.KEY_USER_ID));
                 data.put(Constants.KEY_NAME, preferenceManager.getString(Constants.KEY_NAME));
                 data.put(Constants.KEY_FCM_TOKEN, preferenceManager.getString(Constants.KEY_FCM_TOKEN));
@@ -262,7 +370,10 @@ public class ChatActivity extends BaseActivity {
     private void setListeners() {
         binding.imageBack.setOnClickListener(v -> onBackPressed());
         binding.layoutSend.setOnClickListener(v -> sendMessage());
+        binding.layoutLocation.setOnClickListener(v -> displayLocation());
     }
+
+
 
     private String getReadableDateTime(Date date) {
         return new SimpleDateFormat("dd/MM/yyyy - hh:mm a", Locale.getDefault()).format(date);
@@ -307,8 +418,41 @@ public class ChatActivity extends BaseActivity {
     };
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        updateTypingStatus(0);
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         listenAvailabilityOfReceiver();
+    }
+
+    //ALL METHODS FOR GOOGLE MAP
+    //CHECK SERIVCE STATUS (chatactivity)
+    public boolean isServiceOK(){
+        Log.d(TAG, "isServiceOK: checking ggservice version");
+        int available = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(ChatActivity.this);
+        if(available == ConnectionResult.SUCCESS){
+            //everything is fine
+            Log.d(TAG, "isServiceOK: is working");
+            return true;
+        }
+        else if(GoogleApiAvailability.getInstance().isUserResolvableError(available)){
+            //an error occur
+            Log.d(TAG, "isServiceOK: error");
+            Dialog dialog = GoogleApiAvailability.getInstance().getErrorDialog(ChatActivity.this, available, ERROR_DIALOG_REQUEST);
+            dialog.show();
+        }else{
+            Toast.makeText(this, "You can't make map request", Toast.LENGTH_SHORT).show();
+        }
+        return false;
+    }
+
+    private void displayLocation() {
+        Toast.makeText(this, "Location sent", Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(ChatActivity.this, MapActivity.class);
+        startActivity(intent);
     }
 }

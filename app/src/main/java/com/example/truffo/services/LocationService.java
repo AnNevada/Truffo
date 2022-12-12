@@ -27,11 +27,11 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 
 public class LocationService extends Service {
-    private LocationCallback locationCallback = new LocationCallback() {
+    private final LocationCallback locationCallback = new LocationCallback() {
         @Override
         public void onLocationResult(@NonNull LocationResult locationResult) {
             super.onLocationResult(locationResult);
-            if (locationResult != null && locationResult.getLastLocation() != null) {
+            if (locationResult.getLastLocation() != null) {
                 double latitude = locationResult.getLastLocation().getLatitude();
                 double longitude = locationResult.getLastLocation().getLongitude();
                 Log.d("LOCATION_UPDATE", latitude + ", " + longitude);
@@ -75,16 +75,14 @@ public class LocationService extends Service {
         builder.setAutoCancel(false);
         builder.setPriority(NotificationCompat.PRIORITY_MAX);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (notificationManager != null && notificationManager.getNotificationChannel(channelId) == null) {
-                NotificationChannel notificationChannel = new NotificationChannel(
-                        channelId,
-                        "Location Serivce",
-                        NotificationManager.IMPORTANCE_HIGH
-                );
-                notificationChannel.setDescription("This channel is used by location service");
-                notificationManager.createNotificationChannel(notificationChannel);
-            }
+        if (notificationManager != null && notificationManager.getNotificationChannel(channelId) == null) {
+            NotificationChannel notificationChannel = new NotificationChannel(
+                    channelId,
+                    "Location Serivce",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            notificationChannel.setDescription("This channel is used by location service");
+            notificationManager.createNotificationChannel(notificationChannel);
         }
 
         LocationRequest locationRequest = new LocationRequest();

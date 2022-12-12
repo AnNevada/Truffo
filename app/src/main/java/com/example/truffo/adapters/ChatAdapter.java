@@ -2,7 +2,9 @@ package com.example.truffo.adapters;
 
 import android.graphics.Bitmap;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -11,6 +13,8 @@ import com.example.truffo.databinding.ItemContainerReceivedMessageBinding;
 import com.example.truffo.databinding.ItemContainerSentMessageBinding;
 import com.example.truffo.models.ChatMessage;
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -25,12 +29,12 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.receiverProfileImage = receiverProfileImage;
     }
 
+    //PUT DATA IN THE CONSTRUCTOR
     public ChatAdapter(List<ChatMessage> chatMessages, Bitmap receiverProfileImage, String senderId) {
         this.chatMessages = chatMessages;
         this.receiverProfileImage = receiverProfileImage;
         this.senderId = senderId;
     }
-
 
     @NonNull
     @Override
@@ -59,14 +63,14 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        //Check the current position
         if(getItemViewType(position) == VIEW_TYPE_SENT)
         {
             ((SentMessageViewHolder) holder).setData(chatMessages.get(position));
-
         }
         else
         {
-            ((ReceivedMessageViewHolder) holder).setData(chatMessages.get(position),receiverProfileImage);
+            ((ReceivedMessageViewHolder) holder).setData(chatMessages.get(position), receiverProfileImage);
         }
     }
 
@@ -87,6 +91,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
+    //SENT MESSAGE VIEWHOLDER
     static class SentMessageViewHolder extends RecyclerView.ViewHolder
     {
         private final ItemContainerSentMessageBinding binding;
@@ -104,6 +109,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
+    //RECEIVED MESSAGE VIEWHOLDER
     static class ReceivedMessageViewHolder extends RecyclerView.ViewHolder
     {
         private final ItemContainerReceivedMessageBinding binding;
@@ -112,7 +118,6 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         {
             super(itemContainerReceivedMessageBinding.getRoot());
             binding = itemContainerReceivedMessageBinding;
-
         }
         //SET RECEIVED MESSAGE TEXT AND TIME TO DISPLAY
         void setData(ChatMessage chatMessage, Bitmap receiverProfileImage)
