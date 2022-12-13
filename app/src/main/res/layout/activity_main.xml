@@ -96,7 +96,7 @@
         android:backgroundTint="@color/primary"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:tint="@color/white"
+        app:tint="@color/white"
         />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -107,12 +107,12 @@
         android:layout_marginRight="@dimen/_20sdp"
         android:layout_marginBottom="@dimen/_15sdp"
         android:contentDescription="@string/app_name"
-        android:src="@drawable/ic_robot"
+        android:src="@drawable/chatbot_icon_2"
         android:backgroundTint="@color/primary"
         app:layout_constraintStart_toStartOf="@id/fabNewChat"
         app:layout_constraintEnd_toEndOf="@id/fabNewChat"
         app:layout_constraintBottom_toTopOf="@id/fabNewChat"
-        android:tint="@color/white"
+        app:tint="@color/white"
         />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
