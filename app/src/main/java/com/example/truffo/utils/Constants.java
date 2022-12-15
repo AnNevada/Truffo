@@ -33,9 +33,7 @@ public class Constants {
     public static final String KEY_IS_TYPING = "isTyping";
     public static final String MESSAGE_TYPE = "messageType";
     public static final String MESSAGE_TYPE_TYPING_STATUS = "messageTyping";
-    public static final String MESSAGE_TYPE_GET_TYPING_STATUS = "getTypingStatus";
     public static final String MESSAGE_TYPE_SEND_NOTIFICATION = "messageNotification";
-    public static final String ACTION_GET_TYPING_STATUS = "action_get_typing_status";
 
     public static HashMap<String, String> remoteMsgHeaders = null;
     public static HashMap<String, String> getRemoteMsgHeaders() {
