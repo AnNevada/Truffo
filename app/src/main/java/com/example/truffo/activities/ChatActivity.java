@@ -158,10 +158,8 @@ public class ChatActivity extends BaseActivity {
                     if (response.isSuccessful()) {
                         try {
                             JSONObject responseObj = new JSONObject(Objects.requireNonNull(response.body()));
-                            if (responseObj.getInt("failure") == 0) {
-                                Toast.makeText(ChatActivity.this, "Message sent successfully", Toast.LENGTH_SHORT).show();
-                            } else {
-                                Toast.makeText(ChatActivity.this, responseObj.toString(), Toast.LENGTH_SHORT).show();
+                            if (responseObj.getInt("failure") != 0) {
+                                Log.d("TypingStatus", "onResponse: " + responseObj.toString());
                             }
                         } catch (Exception exception) {
                             Toast.makeText(ChatActivity.this, exception.getMessage(),Toast.LENGTH_SHORT).show();
