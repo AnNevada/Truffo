@@ -5,6 +5,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.Build;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
@@ -40,7 +41,16 @@ public class MessagingService extends FirebaseMessagingService {
             case Constants.MESSAGE_TYPE_TYPING_STATUS:
                 updateTypingStatus(Integer.parseInt(Objects.requireNonNull(message.getData().get(Constants.KEY_IS_TYPING))));
                 break;
+            case Constants.MESSAGE_TYPE_GET_TYPING_STATUS:
+                getTypingStatus();
+                break;
         }
+    }
+
+    private void getTypingStatus() {
+        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(getBaseContext());
+        Intent intent = new Intent(Constants.ACTION_GET_TYPING_STATUS);
+        localBroadcastManager.sendBroadcast(intent);
     }
 
     private void updateTypingStatus(int typingStatus) {

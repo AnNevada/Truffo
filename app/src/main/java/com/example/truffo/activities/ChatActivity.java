@@ -1,11 +1,10 @@
 package com.example.truffo.activities;
 
+import android.app.Dialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.app.Dialog;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
@@ -63,6 +62,7 @@ public class ChatActivity extends BaseActivity {
     private FirebaseFirestore database;
     private String conversationId = null;
     private Boolean isReceiverAvailable = false;
+    private Boolean isTyping = false;
 
     //Vars for google map
     private static final String TAG = "MapTest";
@@ -77,6 +77,7 @@ public class ChatActivity extends BaseActivity {
         loadReceiverDetails();
         init();
         listenMessages();
+        getTypingStatusOfReceiver();
     }
 
     private void init() {
@@ -100,8 +101,10 @@ public class ChatActivity extends BaseActivity {
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (s.toString().trim().length() > 0) {
                     updateTypingStatus(1);
+                    isTyping = true;
                 } else {
                     updateTypingStatus(0);
+                    isTyping = false;
                 }
             }
 
@@ -127,7 +130,84 @@ public class ChatActivity extends BaseActivity {
                         , new IntentFilter(Constants.ACTION_TYPING)
                 );
 
+        LocalBroadcastManager.getInstance(this)
+                .registerReceiver(
+                        new BroadcastReceiver() {
+                            @Override
+                            public void onReceive(Context context, Intent intent) {
+                                if(isTyping) {
+                                    updateTypingStatus(1);
+                                }
+                            }
+                        }
+                , new IntentFilter(Constants.ACTION_GET_TYPING_STATUS));
+
         database = FirebaseFirestore.getInstance();
+    }
+
+    private void getTypingStatusOfReceiver() {
+        try {
+            database.collection(Constants.KEY_COLLECTION_USERS)
+                    .document(receiverUser.id)
+                    .addSnapshotListener((value, error) -> {
+                        if (error != null) {
+                            return;
+                        }
+                        if (value != null) {
+                            receiverUser.token = value.getString(Constants.KEY_FCM_TOKEN);
+                            try {
+                                JSONArray tokens = new JSONArray();
+                                tokens.put(receiverUser.token);
+
+                                JSONObject getTypingStatus = new JSONObject();
+                                getTypingStatus.put(Constants.MESSAGE_TYPE, Constants.MESSAGE_TYPE_GET_TYPING_STATUS);
+                                getTypingStatus.put(Constants.KEY_SENDER_ID, preferenceManager.getString(Constants.KEY_USER_ID));
+                                getTypingStatus.put(Constants.KEY_RECEIVER_ID, receiverUser.id);
+                                getTypingStatus.put(Constants.KEY_FCM_TOKEN, preferenceManager.getString(Constants.KEY_FCM_TOKEN));
+
+                                JSONObject body = new JSONObject();
+                                body.put(Constants.REMOTE_MSG_DATA, getTypingStatus);
+                                body.put(Constants.REMOTE_MSG_REGISTRATION_IDS, tokens);
+
+                                String messageBody = body.toString();
+
+                                ApiClient.getClient().create(ApiService.class).sendMessage(
+                                        Constants.getRemoteMsgHeaders(),
+                                        messageBody
+                                ).enqueue(new Callback<String>() {
+                                    @Override
+                                    public void onResponse(Call<String> call, Response<String> response) {
+                                        if (response.isSuccessful()) {
+                                            try {
+                                                JSONObject responseObj = new JSONObject(Objects.requireNonNull(response.body()));
+                                                if (responseObj.getInt("failure") != 0) {
+                                                    Toast.makeText(ChatActivity.this, responseObj.toString(), Toast.LENGTH_SHORT).show();
+                                                }
+                                            } catch (Exception exception) {
+                                                Toast.makeText(ChatActivity.this, exception.getMessage(),Toast.LENGTH_SHORT).show();
+                                            }
+                                        } else {
+                                            Toast.makeText(ChatActivity.this, response.message(), Toast.LENGTH_SHORT).show();
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onFailure(Call<String> call, Throwable t) {
+                                        Toast.makeText(ChatActivity.this, "Message failed", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                            }
+                            catch(Exception ex) {
+                                Log.d(TAG, "getReceiverTypingStatus: " + ex.getMessage());
+                            }
+                        }
+                    });
+
+
+        }
+        catch(Exception ex) {
+            Toast.makeText(this, ex.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     // UPDATE TYPING STATUS OF SENDER
@@ -158,9 +238,7 @@ public class ChatActivity extends BaseActivity {
                     if (response.isSuccessful()) {
                         try {
                             JSONObject responseObj = new JSONObject(Objects.requireNonNull(response.body()));
-                            if (responseObj.getInt("failure") == 0) {
-                                Toast.makeText(ChatActivity.this, "Message sent successfully", Toast.LENGTH_SHORT).show();
-                            } else {
+                            if (responseObj.getInt("failure") != 0) {
                                 Toast.makeText(ChatActivity.this, responseObj.toString(), Toast.LENGTH_SHORT).show();
                             }
                         } catch (Exception exception) {
@@ -420,6 +498,7 @@ public class ChatActivity extends BaseActivity {
     @Override
     protected void onPause() {
         super.onPause();
+        isTyping = false;
         updateTypingStatus(0);
     }
 
