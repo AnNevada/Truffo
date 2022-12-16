@@ -162,21 +162,21 @@ public class ChatActivity extends BaseActivity {
                                 Log.d("TypingStatus", "onResponse: " + responseObj.toString());
                             }
                         } catch (Exception exception) {
-                            Toast.makeText(ChatActivity.this, exception.getMessage(),Toast.LENGTH_SHORT).show();
+                            Log.d(TAG, "onResponse: failed");
                         }
                     } else {
-                        Toast.makeText(ChatActivity.this, response.message(), Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "onResponse: success");
                     }
                 }
 
                 @Override
                 public void onFailure(Call<String> call, Throwable t) {
-                    Toast.makeText(ChatActivity.this, "Message failed", Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, "onFailure: ");
                 }
             });
         }
         catch(Exception exception) {
-            Toast.makeText(ChatActivity.this, "Message failed", Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "updateTypingStatus: ");
         }
     }
 
